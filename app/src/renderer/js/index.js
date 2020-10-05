@@ -1,16 +1,11 @@
-import { ipcRenderer } from 'electron'
-import config from '../../main/config'
-import elementReady from 'element-ready'
+const {ipcRenderer} = require('electron')
+const elementReady = require('element-ready')
+
+const config = require('../../main/config')
 
 const $ = document.querySelector.bind(document)
 
 var post = 0
-
-const selectors = {
-  root: '#react-root ._onabe',
-  loginButton: '#react-root ._fcn8k',
-  notFoundPage: '.dialog-404'
-}
 
 ipcRenderer.on('toggle-dark-mode', () => {
   config.set('darkMode', !config.get('darkMode'))
@@ -18,48 +13,59 @@ ipcRenderer.on('toggle-dark-mode', () => {
 })
 
 ipcRenderer.on('navigate-home', () => {
-  const home = $('._n7q2c ._r1svv:nth-child(1) a')
+  const home = $('._tdn3u').childNodes[0].childNodes[0]
   if (home) {
     home.click()
   }
 })
 
 ipcRenderer.on('navigate-discover', () => {
-  const discover = $('._n7q2c ._r1svv:nth-child(2) a')
+  const discover = $('._tdn3u').childNodes[1].childNodes[0]
+  console.log(discover)
   if (discover) {
     discover.click()
   }
 })
 
+ipcRenderer.on('navigate-upload', () => {
+  const upload = $('._tdn3u').childNodes[2]
+  if (upload) {
+    upload.click()
+  }
+})
+
 ipcRenderer.on('navigate-notifications', () => {
-  const notifications = $('._n7q2c ._r1svv:nth-child(3) a')
+  const notifications = $('._tdn3u').childNodes[3].childNodes[0]
   if (notifications) {
     notifications.click()
   }
 })
 
 ipcRenderer.on('navigate-profile', () => {
-  const profile = $('._n7q2c ._r1svv:nth-child(4) a')
-  console.log(profile)
+  const profile = $('._tdn3u').childNodes[4].childNodes[0]
   if (profile) {
     profile.click()
   }
 })
 
 ipcRenderer.on('navigate-up', () => {
-  if (post > 1) {
-    post -= 1
-    var title = $('#react-root > section > main > section > div > div:nth-child(1) > article:nth-child(' + post + ') > header')
-    var rect = title.getBoundingClientRect()
-    window.scrollBy(0, rect.top)
+  if (post >= 1) {
+    var titles = document.getElementsByClassName('_s5vjd')
+    if (titles[post] != null) {
+      post -= 1
+      var rect = titles[post].getBoundingClientRect()
+      window.scrollBy(0, rect.top - 44)
+    }
   }
 })
 
 ipcRenderer.on('navigate-down', () => {
-  post += 1
-  var title = $('#react-root > section > main > section > div > div:nth-child(1) > article:nth-child(' + post + ') > header')
-  var rect = title.getBoundingClientRect()
-  window.scrollBy(0, rect.top)
+  var titles = document.getElementsByClassName('_s5vjd')
+  if (titles[post + 1] != null) {
+    post += 1
+    var rect = titles[post].getBoundingClientRect()
+    window.scrollBy(0, rect.top - 44)
+  }
 })
 
 function backHomeButton (location) {
@@ -76,7 +82,7 @@ function backHomeButton (location) {
   }
 
   element.appendChild(link)
-  body.appendChild(element)
+  body.insertBefore(element, body.firstChild)
 
   link.addEventListener('click', event => {
     ipcRenderer.send(location)
@@ -91,21 +97,14 @@ function backHomeButton (location) {
   })
 }
 
-function login (elm) {
-  elm.addEventListener('click', (e) => {
-    elm.classList.toggle('goback')
-    process.nextTick(() => {
-      if (elm.classList.contains('goback')) {
-        elm.innerText = 'Go back'
-      } else {
-        elm.innerText = 'Log In'
-      }
-    })
-  })
-}
-
 function setDarkMode () {
   document.documentElement.classList.toggle('dark-mode', config.get('darkMode'))
+
+  if (document.documentElement.style.backgroundColor === 'rgb(25, 38, 51)') {
+    document.documentElement.style.backgroundColor = '#fff'
+  } else if (config.get('darkMode')) {
+    document.documentElement.style.backgroundColor = '#192633'
+  }
 }
 
 function fix404 () {
@@ -118,41 +117,6 @@ function fix404 () {
   section.classList.add('_8f735')
   nav.classList.add('_onabe', '_5z3y6')
 
-  /*
-  let user = $('#link_profile a').href
-
-  nav.innerHTML = '<div class="_fjpuc _hykpq">\
-        <div>\
-          <div class="_bfc7q">\
-            <div class="_4kdxu">\
-              <div class="_n7q2c">\
-                <div class="_r1svv">\
-                  <a class="_gx3bg" href="/">\
-                    <div class="_o5rm6 coreSpriteMobileNavHomeActive"></div>\
-                  </a>\
-                </div>\
-                <div class="_r1svv">\
-                  <a class="_gx3bg" href="/explore/">\
-                    <div class="_o5rm6 coreSpriteMobileNavSearchInactive"></div>\
-                  </a>\
-                </div>\
-                <div class="_r1svv">\
-                  <a class="_gx3bg" href="/accounts/activity/">\
-                    <div class="_o5rm6 coreSpriteMobileNavActivityInactive"></div>\
-                  </a>\
-                </div>\
-                <div class="_r1svv">\
-                  <a class="_gx3bg" href="' + user + '">\
-                    <div class="_o5rm6 coreSpriteMobileNavProfileInactive"></div>\
-                  </a>\
-                </div>\
-              </div>\
-            </div>\
-          </div>\
-        </div>\
-      </div>'
-  */
-
   section.appendChild(nav)
 
   $('.error-container p a').remove()
@@ -161,25 +125,13 @@ function fix404 () {
   backHomeButton('home')
 }
 
-function init () {
-  setDarkMode()
-
-  if (!$(selectors.notFoundPage)) {
-    backHomeButton('back')
-  }
-
-  // Prevent flash of white on startup when in dark mode
-  // TODO: Find solution to this with pure css
-  if (config.get('darkMode')) {
-    document.documentElement.style.backgroundColor = '#192633'
-  }
-}
-
 document.addEventListener('DOMContentLoaded', (event) => {
   // enable OS specific styles
   document.documentElement.classList.add(`os-${process.platform}`)
 
-  elementReady(selectors.notFoundPage).then(fix404)
-  elementReady(selectors.root).then(init)
-  elementReady(selectors.loginButton).then(login)
+  // Initialize darkMode settings
+  setDarkMode()
+
+  // Fix 404 pages
+  elementReady('.dialog-404').then(fix404)
 })
